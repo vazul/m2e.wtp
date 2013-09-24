@@ -27,6 +27,8 @@ public class Messages extends NLS {
 	public static String MavenPluginUtils_ArtifactId_Cant_Be_Null;
 	public static String MavenPluginUtils_Error_Cant_Retrieve_Latest_Plugin_Version;
 	public static String MavenPluginUtils_GroupId_Cant_Be_Null;
+	public static String MavenWtpPreferencePage_War_Overlays_Should_Use_Linked_Folders;
+	public static String MavenWtpPreferencePage_Overlay_Artifacts_Will_Be_Mapped_Using_Linked_Folders;
 	public static String MavenWtpPreferencePage_Configure_Workspace_Settings;
 	public static String MavenWtpPreferencePage_EAR_Project_Preferences;
 	public static String MavenWtpPreferencePage_Enable_Project_Specific_Settings;

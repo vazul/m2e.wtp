@@ -26,6 +26,8 @@ public final class MavenWtpPreferencesConstants {
   public static final String P_APPLICATION_XML_IN_BUILD_DIR = PREFIX + ".ear.applicationXmlInBuilDir"; //$NON-NLS-1$
 
   public static final String P_WEB_MAVENARCHIVER_IN_BUILD_DIR = PREFIX + ".war.archiverFilesInBuilDir"; //$NON-NLS-1$
+  
+  public static final String P_WAR_OVERLAY_WITH_LINKED_FOLDERS = PREFIX + ".war.overlaysWithLinkedFolders"; //$NON-NLS-1$
 
   public static final String P_ENABLED_PROJECT_SPECIFIC__PREFS = PREFIX + ".enabledProjectSpecificPrefs"; //$NON-NLS-1$
 

@@ -71,7 +71,8 @@ public class MavenWtpPreferencePage extends PropertyPage implements IWorkbenchPr
   private Group warPrefGroup;
 
   private Button warMavenArchiverButton;
-
+  
+  private Button warOverlaysUsesLinkedFolder;
 
   private Group configuratorEnablerGroup;
 
@@ -180,6 +181,10 @@ protected Control createContents(Composite parent) {
     warMavenArchiverButton = new Button(warPrefGroup, SWT.CHECK);
     warMavenArchiverButton.setText(Messages.MavenWtpPreferencePage_Generate_MavenArchiver_Files_Under_Build_Dir);
     warMavenArchiverButton.setToolTipText(Messages.MavenWtpPreferencePage_Using_Build_Directory);
+    
+    warOverlaysUsesLinkedFolder = new Button(warPrefGroup, SWT.CHECK);
+    warOverlaysUsesLinkedFolder.setText(Messages.MavenWtpPreferencePage_War_Overlays_Should_Use_Linked_Folders);
+    warOverlaysUsesLinkedFolder.setToolTipText(Messages.MavenWtpPreferencePage_Overlay_Artifacts_Will_Be_Mapped_Using_Linked_Folders);
   }
 
   private Link createLink(Composite composite, String text) {
@@ -213,6 +218,9 @@ protected Control createContents(Composite parent) {
     if (warMavenArchiverButton != null) {
       warMavenArchiverButton.setEnabled(isEnabled);
     }
+    if(warOverlaysUsesLinkedFolder != null) {
+      warOverlaysUsesLinkedFolder.setEnabled(isEnabled);
+    }
     if (fChangeWorkspaceSettings != null) {
         fChangeWorkspaceSettings.setEnabled(!isEnabled);
     }    
@@ -231,6 +239,9 @@ protected Control createContents(Composite parent) {
     }
     if (warMavenArchiverButton != null) {
       warMavenArchiverButton.setSelection(preferences.isWebMavenArchiverUsesBuildDirectory());
+    }
+    if(warOverlaysUsesLinkedFolder != null) {
+      warOverlaysUsesLinkedFolder.setSelection(preferences.isWarOverlaysUsesLinkedFolders());
     }
   }
 
@@ -268,6 +279,9 @@ protected Control createContents(Composite parent) {
     if (warMavenArchiverButton != null) {
       newPreferences.setWebMavenArchiverUsesBuildDirectory(warMavenArchiverButton.getSelection());
     }
+    if(warOverlaysUsesLinkedFolder != null) {
+      newPreferences.setWarOverlaysUsesLinkedFolders(warOverlaysUsesLinkedFolder.getSelection());
+    }
 
     if (enablersComposites != null) {
       for (ConfiguratorEnablerComposite enablerComposite : enablersComposites) {
@@ -277,6 +291,8 @@ protected Control createContents(Composite parent) {
     
     if(!newPreferences.equals(preferences)) {
       preferencesManager.savePreferences(newPreferences, getProject());
+      
+      MavenWtpPlugin.getDefault().setupWebXmlChangeListener(newPreferences.isWarOverlaysUsesLinkedFolders());
 
       boolean res = MessageDialog.openQuestion(getShell(), Messages.MavenWtpPreferencePage_Maven_JavaEE_Integration_Settings, //
           Messages.MavenWtpPreferencePage_Update_Projects_After_Preference_Changes);
@@ -301,6 +317,7 @@ protected Control createContents(Composite parent) {
     if(project == null) {
       workspacePreferences.setApplicationXmGeneratedInBuildDirectory(true);
       workspacePreferences.setWebMavenArchiverUsesBuildDirectory(true);
+      workspacePreferences.setWarOverlaysUsesLinkedFolders(false);
     }
 
     fillValues(workspacePreferences);
