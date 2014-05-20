@@ -264,22 +264,9 @@ public void configureProject(IProject project, MavenProject mavenProject, IProgr
    */
   protected IProject preConfigureDependencyProject(IMavenProjectFacade dependencyMavenProjectFacade, IProgressMonitor monitor) throws CoreException {
     IProject dependency = dependencyMavenProjectFacade.getProject();
-    MavenProject mavenDependency = dependencyMavenProjectFacade.getMavenProject(monitor);
     String depPackaging = dependencyMavenProjectFacade.getPackaging();
     //jee dependency has not been configured yet - i.e. it has no JEE facet-
-    if(JEEPackaging.isJEEPackaging(depPackaging) && !WTPProjectsUtil.isJavaEEProject(dependency)) {
-      IProjectConfiguratorDelegate delegate = ProjectConfiguratorDelegateFactory
-          .getProjectConfiguratorDelegate(dependencyMavenProjectFacade.getPackaging());
-      if(delegate != null) {
-        //Lets install the proper facets
-        try {
-          delegate.configureProject(dependency, mavenDependency, monitor);
-        } catch(MarkedException ex) {
-          //Markers already have been created for this exception, no more to do.
-          return dependency;
-        }
-      }
-    } else {
+    if(!JEEPackaging.isJEEPackaging(depPackaging)) {
       // XXX Probably should create a UtilProjectConfiguratorDelegate
       configureWtpUtil(dependencyMavenProjectFacade, monitor);
     }
@@ -360,6 +347,11 @@ public void setModuleDependencies(IProject project, MavenProject mavenProject, I
         fileCleaner.addFolder(p);
       }
     }
+    // add default resource folder
+    IPath defaultResource = new Path("src/main/resources"); //$NON-NLS-1$
+    fileCleaner.addFiles(defaultResource.append("META-INF/MANIFEST.MF")); //$NON-NLS-1$
+    fileCleaner.addFolder(defaultResource);
+    
     for (IPath p : facade.getTestCompileSourceLocations()) {
       if (p != null) fileCleaner.addFolder(p);
     }

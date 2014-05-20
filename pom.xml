@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright (c) 2008 Sonatype, Inc.
+  Copyright (c) 2008-2013 Sonatype, Inc. and others
   All rights reserved. This program and the accompanying materials
   are made available under the terms of the Eclipse Public License v1.0
   which accompanies this distribution, and is available at
@@ -18,7 +18,7 @@
 
   <groupId>org.eclipse.m2e.wtp</groupId>
   <artifactId>org.eclipse.m2e.wtp.parent</artifactId>
-  <version>1.0.1-SNAPSHOT</version>
+  <version>1.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>M2E-WTP :: Parent</name>
@@ -26,17 +26,21 @@
   <inceptionYear>2008</inceptionYear>
 
   <properties>
-    <tycho-version>0.18.1</tycho-version>
+    <tycho-version>0.20.0</tycho-version>
     <tycho-extras-version>${tycho-version}</tycho-extras-version>
-
+    <tycho.scmUrl>scm:git:http://git.eclipse.org/gitroot/m2e-wtp/org.eclipse.m2e.wtp.git</tycho.scmUrl>
     <test.timeout>1800</test.timeout><!--  30 mins -->
     <tycho.test.jvmArgs>-Xmx512m -XX:MaxPermSize=256m</tycho.test.jvmArgs>
-    <eclipse.target>kepler</eclipse.target>
+    <eclipse.target>luna</eclipse.target>
     <eclipse-repo.url>http://download.eclipse.org/releases/${eclipse.target}</eclipse-repo.url>
     <webtools-repo.url>http://download.eclipse.org/webtools/repository/${eclipse.target}</webtools-repo.url>
+    <m2e-repo.url>http://download.eclipse.org/technology/m2e/milestones/1.5/</m2e-repo.url>
+    <!--
+    <m2e-repo.url>http://repository.takari.io:8081/nexus/content/sites/m2e.extras/m2e/1.5.0/N/LATEST/</m2e-repo.url>
+    -->
     <!-- Warning : changing the mavenarchiver version requires submitting a new CQ in ipzilla -->
-    <!-- Use signed version of m2eclipse-mavenarchiver 0.15.0.201207090125, built on build.eclipse.org -->
-    <mavenarchiver-repo.url>http://download.eclipse.org/m2e-wtp/signed/mavenarchiver/0.15.0/</mavenarchiver-repo.url>
+    <!-- Use signed version of m2eclipse-mavenarchiver 0.16.0.201401211452, built on build.eclipse.org -->
+    <mavenarchiver-repo.url>http://download.eclipse.org/m2e-wtp/signed/mavenarchiver/0.16.0/</mavenarchiver-repo.url>
 
   </properties>
 
@@ -83,7 +87,7 @@
     <repository>
       <id>m2e-core</id>
       <layout>p2</layout>
-      <url>http://download.eclipse.org/technology/m2e/releases/1.4/</url>
+      <url>${m2e-repo.url}</url>
     </repository>    
     <repository>
       <id>eclipse</id>
@@ -97,6 +101,11 @@
       <url>${webtools-repo.url}</url>
     </repository>
     -->
+    <repository>
+      <id>eclipse-license</id>
+      <layout>p2</layout>
+      <url>http://download.eclipse.org/cbi/updates/license</url>
+    </repository>
     <repository>
       <id>mavenarchiver</id>
       <layout>p2</layout>
@@ -132,7 +141,17 @@
         <version>${tycho-version}</version>
         <configuration>
           <format>yyyyMMdd-HHmm</format>
+          <sourceReferences>
+            <generate>true</generate>
+          </sourceReferences>
         </configuration>
+       <dependencies>
+          <dependency>
+            <groupId>org.eclipse.tycho.extras</groupId>
+            <artifactId>tycho-sourceref-jgit</artifactId>
+            <version>${tycho-extras-version}</version>
+          </dependency>
+       </dependencies>
       </plugin>
       <plugin>
         <groupId>org.eclipse.tycho</groupId>
@@ -168,7 +187,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>2.5</version>
+          <version>2.6</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -178,10 +197,9 @@
     <profile>
       <id>osx</id>
       <activation>
-        <property>
-          <name>java.vendor.url</name>
-          <value>http://www.apple.com/</value>
-        </property>
+        <os>
+          <family>mac</family>
+        </os>
       </activation>
       <properties>
         <tycho.test.jvmArgs>-Xmx512m -XX:MaxPermSize=256m -Dosgi.ws=cocoa -XstartOnFirstThread</tycho.test.jvmArgs>
@@ -220,6 +238,7 @@
                 <goals>
                   <goal>normalize</goal>
                 </goals>
+                <phase>verify</phase>
               </execution>
             </executions>
           </plugin>
@@ -227,13 +246,14 @@
           <plugin>
             <groupId>org.eclipse.cbi.maven.plugins</groupId>
             <artifactId>eclipse-jarsigner-plugin</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
             <executions>
               <execution>
                 <id>sign</id>
                 <goals>
                   <goal>sign</goal>
                 </goals>
+                <phase>verify</phase>
               </execution>
             </executions>
           </plugin>
@@ -248,6 +268,7 @@
                 <goals>
                   <goal>pack</goal>
                 </goals>
+                <phase>verify</phase>
               </execution>
             </executions>
           </plugin>
@@ -268,6 +289,47 @@
             <configuration>
               <defaultP2Metadata>false</defaultP2Metadata>
             </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>sdk</id>
+      <activation>
+      <file>
+        <exists>sdk</exists>
+      </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eclipse.tycho.extras</groupId>
+            <artifactId>tycho-source-feature-plugin</artifactId>
+            <version>${tycho-extras-version}</version>
+            <executions>
+              <execution>
+                <id>source-feature</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>source-feature</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.eclipse.tycho</groupId>
+            <artifactId>tycho-p2-plugin</artifactId>
+            <version>${tycho-version}</version>
+            <executions>
+              <execution>
+                <id>attach-p2-metadata</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>p2-metadata</goal>
+                </goals>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>

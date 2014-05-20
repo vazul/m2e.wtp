@@ -83,7 +83,9 @@ public class WarPluginConfiguration extends AbstractFilteringSupportMavenPlugin 
     this.project = project;
     this.mavenProject = mavenProject;
     Plugin plugin = getPlugin();
-    setConfiguration((Xpp3Dom)plugin.getConfiguration());
+    if (plugin != null) {
+    	setConfiguration((Xpp3Dom)plugin.getConfiguration());
+    }
   }
 
   public Plugin getPlugin() {
@@ -389,7 +391,7 @@ protected String getFilteringAttribute() {
   }
 
   @Override
-public SourceLocation getSourceLocation() {
+  public SourceLocation getSourceLocation() {
     Plugin plugin = getPlugin();
     if (plugin == null) {
       return null;
@@ -398,7 +400,7 @@ public SourceLocation getSourceLocation() {
   }
 
   @Override
-public String getSourceIncludeParameterName() {
+  public String getSourceIncludeParameterName() {
     return "warSourceIncludes"; //$NON-NLS-1$
   }
 
