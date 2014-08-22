@@ -10,6 +10,7 @@ package org.eclipse.m2e.wtp.overlay;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +19,7 @@ import java.util.List;
 
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.IOUtil;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -85,13 +87,38 @@ public class WebXmlChangeListener implements IResourceChangeListener {
 					3);
 			List<IPath> webXmlLocations = new ArrayList<IPath>(3);
 
-			for (IMavenProjectFacade facade : projects) {
+			for (final IMavenProjectFacade facade : projects) {
 				String webXmlPath = facade.getProject().getPersistentProperty(
 						OverlayConfigurator.WEBXML_PATH);
 				if (webXmlPath != null) {
 					webXmlLocations.add(new Path(webXmlPath));
 				} else {
-					needsToBeConfigured.add(facade);
+					//check if any xml file has been changed with <web-app content
+					delta.accept(new IResourceDeltaVisitor() {
+						
+						@Override
+						public boolean visit(IResourceDelta delta) throws CoreException
+						{
+							IResource resource = delta.getResource();
+							if (resource instanceof IFile && resource.getName().endsWith(".xml") && resource.getProject().equals(facade.getProject())) //$NON-NLS-1$
+							{
+								try
+								{
+									String xmlContent = IOUtil.toString(new FileReader(resource.getLocation().toFile()));
+									if (xmlContent.indexOf("<web-app") >=0) //$NON-NLS-1$
+									{
+										needsToBeConfigured.add(facade);
+										return false;
+									}
+								}
+								catch (Exception ex)
+								{
+									//do nothing
+								}
+							}
+							return true;
+						}
+					});
 				}
 			}
 
