@@ -46,6 +46,12 @@ public class OverlayResourceChangeListener implements IResourceChangeListener {
 
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
+		boolean isPublishOverlaysEnabled = isPublishOverlaysEnabled();
+		if (!isPublishOverlaysEnabled)
+		{
+			return;
+		}
+
 		IResourceDelta delta =  event.getDelta();
 		if (delta == null) {
 			return;
@@ -92,7 +98,6 @@ public class OverlayResourceChangeListener implements IResourceChangeListener {
 			return;
 		}
 		
-		boolean isPublishOverlaysEnabled = isPublishOverlaysEnabled();
 		for(Map.Entry<IServer, List<IModule>> entries : republishableServers.entrySet()) {
 			IServer iserver = entries.getKey();
 			boolean shouldPublish = isPublishOverlaysEnabled;
