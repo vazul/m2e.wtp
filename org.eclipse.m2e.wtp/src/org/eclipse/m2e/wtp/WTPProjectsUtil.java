@@ -47,6 +47,7 @@ import org.eclipse.m2e.core.project.IMavenProjectFacade;
 import org.eclipse.m2e.core.project.MavenProjectUtils;
 import org.eclipse.m2e.jdt.internal.MavenClasspathHelpers;
 import org.eclipse.m2e.wtp.internal.Messages;
+import org.eclipse.m2e.wtp.overlay.LinkedOverlaysConstants;
 import org.eclipse.m2e.wtp.overlay.modulecore.IOverlayVirtualComponent;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.common.componentcore.ComponentCore;
@@ -195,7 +196,11 @@ public class WTPProjectsUtil {
       for (ComponentResource link : resources) {
         if (runtimePath.equals(link.getRuntimePath()) && 
            (sourcePathToKeep == null || !sourcePathToKeep.contains(link.getSourcePath()))) {
-          component.getResources().remove(link);
+					//don't remove overlays folder
+					if (!link.getSourcePath().segment(0).equals(LinkedOverlaysConstants.OVERLAYS_FOLDER))
+					{
+						component.getResources().remove(link);
+					}
         }
       }
    }

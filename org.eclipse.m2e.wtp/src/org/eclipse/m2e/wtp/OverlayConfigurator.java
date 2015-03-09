@@ -84,6 +84,7 @@ public class OverlayConfigurator extends WTPProjectConfigurator {
   @Override
   public void configure(ProjectConfigurationRequest request, IProgressMonitor monitor)
       throws CoreException {
+		setModuleDependencies(request.getProject(), request.getMavenProject(), monitor);
   }
 
   @Override
@@ -286,11 +287,11 @@ public class OverlayConfigurator extends WTPProjectConfigurator {
       return;
     }
 
-    final MavenSessionHelper helper = new MavenSessionHelper(mavenProject);
+		//final MavenSessionHelper helper = new MavenSessionHelper(mavenProject);
     try {
-      helper.ensureDependenciesAreResolved("maven-war-plugin", "war:war"); //$NON-NLS-1$ //$NON-NLS-2$
+			//helper.ensureDependenciesAreResolved("maven-war-plugin", "war:war"); //$NON-NLS-1$ //$NON-NLS-2$
 
-      MavenPlugin.getMaven();
+			// MavenPlugin.getMaven();
 
       //schedule a clean after 10 seconds... cancel a clean job if it is in progress or in sleeping
       ExplodedWarCleaner.scheduleClean();
@@ -461,7 +462,7 @@ public class OverlayConfigurator extends WTPProjectConfigurator {
       }
 
     } finally {
-      helper.dispose();
+			//helper.dispose();
     }
 
   }

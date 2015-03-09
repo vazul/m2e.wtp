@@ -12,14 +12,10 @@ package org.eclipse.m2e.wtp.internal.filtering;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.maven.execution.MavenExecutionRequest;
-import org.apache.maven.execution.MavenSession;
-import org.apache.maven.lifecycle.MavenExecutionPlan;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.Scanner;
@@ -28,24 +24,22 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.Xpp3DomUtils;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFolder;
-import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.m2e.core.MavenPlugin;
 import org.eclipse.m2e.core.embedder.IMaven;
-import org.eclipse.m2e.core.internal.MavenPluginActivator;
 import org.eclipse.m2e.core.project.IMavenProjectFacade;
-import org.eclipse.m2e.core.project.IMavenProjectRegistry;
-import org.eclipse.m2e.core.project.ResolverConfiguration;
 import org.eclipse.m2e.core.project.configurator.AbstractBuildParticipant;
 import org.eclipse.m2e.wtp.DomUtils;
-import org.eclipse.m2e.wtp.MavenWtpConstants;
+import org.eclipse.m2e.wtp.MavenWtpPlugin;
 import org.eclipse.m2e.wtp.WTPProjectsUtil;
 import org.eclipse.m2e.wtp.internal.Messages;
 import org.eclipse.osgi.util.NLS;
@@ -59,7 +53,6 @@ import org.sonatype.plexus.build.incremental.ThreadBuildContext;
  *
  * @author Fred Bricon
  */
-@SuppressWarnings("restriction")
 public class ResourceFilteringBuildParticipant extends AbstractBuildParticipant {
   
   private static final Logger LOG = LoggerFactory.getLogger(ResourceFilteringBuildParticipant.class );
@@ -224,29 +217,27 @@ public void clean(IProgressMonitor monitor) throws CoreException {
   private void executeCopyResources(IMavenProjectFacade facade,  ResourceFilteringConfiguration filteringConfiguration, IPath targetFolder, List<Xpp3Dom> resources, IProgressMonitor monitor) throws CoreException {
 
     //Create a maven request + session
-    ResolverConfiguration resolverConfig = facade.getResolverConfiguration();
-    
     List<String> filters = filteringConfiguration.getFilters();
-    IMavenProjectRegistry projectManager = MavenPlugin.getMavenProjectRegistry();
-    MavenExecutionRequest request = projectManager.createExecutionRequest(facade.getPom(), resolverConfig, monitor);
-    request.setRecursive(false);
-    request.setOffline(true);
 
     IMaven maven = MavenPlugin.getMaven();
     MavenProject mavenProject = facade.getMavenProject();
     
-    MavenSession session = maven.createSession(request, mavenProject);
-    MavenExecutionPlan executionPlan = maven.calculateExecutionPlan(session, mavenProject, Collections.singletonList("resources:copy-resources"), true, monitor); //$NON-NLS-1$
-    
-    MojoExecution copyFilteredResourcesMojo = getExecution(executionPlan, "maven-resources-plugin"); //$NON-NLS-1$
+		List<MojoExecution> mojoExecutions = facade.getMojoExecutions("org.apache.maven.plugins", "maven-resources-plugin", monitor, "copy-resources");//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-    if (copyFilteredResourcesMojo == null) return;
+		if (mojoExecutions.size() > 1)
+		{
+			throw new CoreException(new Status(IStatus.ERROR, MavenWtpPlugin.ID, "There is no exact copy-resources plugin configured: " + mojoExecutions.size())); //$NON-NLS-1$
+		}
+
+		if (mojoExecutions.size() == 0)
+			return;
+    
+		MojoExecution copyFilteredResourcesMojo = mojoExecutions.get(0);
+
 
     Xpp3Dom originalConfig = copyFilteredResourcesMojo.getConfiguration();
     Xpp3Dom  configuration = Xpp3DomUtils.mergeXpp3Dom(new Xpp3Dom("configuration"), originalConfig); //$NON-NLS-1$
-    boolean parentHierarchyLoaded = false;
     try {
-      parentHierarchyLoaded = loadParentHierarchy(facade, monitor);
       
       //Set resource directories to read
       setupResources(configuration, resources);
@@ -267,34 +258,15 @@ public void clean(IProgressMonitor monitor) throws CoreException {
       //Setup filters
       setupFilters(configuration, filters);
 
-      //Create a maven request + session
-      request.setRecursive(false);
-      request.setOffline(true);
-
       //Execute our modified mojo 
       copyFilteredResourcesMojo.setConfiguration(configuration);
       copyFilteredResourcesMojo.getMojoDescriptor().setGoal("copy-resources"); //$NON-NLS-1$
-
-      maven.execute(session, copyFilteredResourcesMojo, monitor);
       
-      if (session.getResult().hasExceptions()){
-        
-          MavenPluginActivator.getDefault().getMavenMarkerManager().addMarker(facade.getProject(), MavenWtpConstants.WTP_MARKER_FILTERING_ERROR,Messages.ResourceFilteringBuildParticipant_Error_While_Filtering_Resources, -1,  IMarker.SEVERITY_ERROR);
-          //move exceptions up to the original session, so they can be handled by the maven builder
-          //XXX current exceptions refer to maven-resource-plugin (since that's what we used), we should probably 
-          // throw a new exception instead to indicate the problem(s) come(s) from web resource filtering
-          for(Throwable t : session.getResult().getExceptions())
-          {
-            getSession().getResult().addException(t);    
-          }
-      }
+			maven.execute(mavenProject, copyFilteredResourcesMojo, monitor);
       
     } finally {
       //Restore original configuration
       copyFilteredResourcesMojo.setConfiguration(originalConfig);
-      if (parentHierarchyLoaded) {
-        mavenProject.setParent(null);
-      }
     }
   }
 
@@ -397,54 +369,6 @@ public void clean(IProgressMonitor monitor) throws CoreException {
     }
   }
   
-  private MojoExecution getExecution(MavenExecutionPlan executionPlan, String artifactId) {
-    if (executionPlan == null) return null;
-    for(MojoExecution execution : executionPlan.getMojoExecutions()) {
-      if(artifactId.equals(execution.getArtifactId()) ) {
-        return execution;
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Workaround for https://bugs.eclipse.org/bugs/show_bug.cgi?id=356725. 
-   * Loads the parent project hierarchy if needed.
-   * @param facade
-   * @param monitor
-   * @return true if parent projects had to be loaded.
-   * @throws CoreException
-   */
-  private boolean loadParentHierarchy(IMavenProjectFacade facade, IProgressMonitor monitor) throws CoreException {
-    boolean loadedParent = false; 
-    MavenProject mavenProject = facade.getMavenProject();
-    try {
-      if (mavenProject.getModel().getParent() == null || mavenProject.getParent() != null) {
-        //If the method is called without error, we can assume the project has been fully loaded
-        //No need to continue. 
-        return false;
-      }
-    } catch (IllegalStateException e) {
-    //The parent can not be loaded properly 
-    }
-    MavenExecutionRequest request = null;
-    while(mavenProject !=null && mavenProject.getModel().getParent() != null) {
-        if(monitor.isCanceled()) {
-          break;
-        }
-        if (request == null) {
-          request = MavenPlugin.getMavenProjectRegistry().createExecutionRequest(facade, monitor);
-        }
-        MavenProject parentProject = MavenPlugin.getMaven().resolveParentProject(request, mavenProject, monitor);
-        if (parentProject != null) {
-          mavenProject.setParent(parentProject);
-          loadedParent = true;            
-        }
-        mavenProject = parentProject;
-    }
-    return loadedParent; 
-  }
-  
 
   private static class CleanBuildContext implements BuildContext {
 
@@ -454,69 +378,88 @@ public void clean(IProgressMonitor monitor) throws CoreException {
 		this.originalContext = originalContext;
 	}
 	  
+		@Override
 	public boolean hasDelta(String relpath) {
 		return true;
 	}
 
+		@Override
 	public boolean hasDelta(File file) {
 		return true;
 	}
 
+		@SuppressWarnings("rawtypes")
+		@Override
 	public boolean hasDelta(List relpaths) {
 		return true;
 	}
 
+		@Override
 	public void refresh(File file) {
 		originalContext.refresh(file);
 	}
 
+		@Override
 	public OutputStream newFileOutputStream(File file) throws IOException {
 		return originalContext.newFileOutputStream(file);
 	}
 
+		@Override
 	public Scanner newScanner(File basedir) {
 		return originalContext.newScanner(basedir);
 	}
 
+		@Override
 	public Scanner newDeleteScanner(File basedir) {
 		return originalContext.newDeleteScanner(basedir);
 	}
 
+		@Override
 	public Scanner newScanner(File basedir, boolean ignoreDelta) {
 		return originalContext.newScanner(basedir, ignoreDelta);
 	}
 
+		@Override
 	public boolean isIncremental() {
 		return false;
 	}
 
+		@Override
 	public void setValue(String key, Object value) {
 		originalContext.setValue(key, value);
 	}
 
+		@Override
 	public Object getValue(String key) {
 		return originalContext.getValue(key);
 	}
 
+		@SuppressWarnings("deprecation")
+		@Override
 	public void addWarning(File file, int line, int column, String message,
 			Throwable cause) {
 		originalContext.addWarning(file, line, column, message, cause);
 	}
 
+		@SuppressWarnings("deprecation")
+		@Override
 	public void addError(File file, int line, int column, String message,
 			Throwable cause) {
 		originalContext.addError(file, line, column, message, cause);
 	}
 
+		@Override
 	public void addMessage(File file, int line, int column, String message,
 			int severity, Throwable cause) {
 		originalContext.addMessage(file, line, column, message, severity, cause);
 	}
 
+		@Override
 	public void removeMessages(File file) {
 		originalContext.removeMessages(file);
 	}
 
+		@Override
 	public boolean isUptodate(File target, File source) {
 		return false;
 	}

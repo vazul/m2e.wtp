@@ -140,7 +140,8 @@ public void configureProject(IProject project, MavenProject mavenProject, IProgr
 
     boolean isDebugEnabled = DebugUtilities.isDebugEnabled();
     if (isDebugEnabled) {
-      DebugUtilities.debug(DebugUtilities.dumpProjectState("Before configuration ",project)); //$NON-NLS-1$
+			//DebugUtilities.debug(DebugUtilities.dumpProjectState("Before configuration ",project)); //$NON-NLS-1$
+			DebugUtilities.debug("Configuring utility project: " + project.getName()); //$NON-NLS-1$
     }
 
     // 2 - check if the manifest already exists, and its parent folder
@@ -170,14 +171,14 @@ public void configureProject(IProject project, MavenProject mavenProject, IProgr
     fixMissingModuleCoreNature(project, monitor);
     
     if (isDebugEnabled) {
-      DebugUtilities.debug(DebugUtilities.dumpProjectState("after configuration ",project)); //$NON-NLS-1$
+			//DebugUtilities.debug(DebugUtilities.dumpProjectState("after configuration ",project)); //$NON-NLS-1$
     }
     //MNGECLIPSE-904 remove tests folder links for utility jars
     removeTestFolderLinks(project, mavenProject, monitor, "/"); //$NON-NLS-1$
     
     //Remove "library unavailable at runtime" warning.
     if (isDebugEnabled) {
-      DebugUtilities.debug(DebugUtilities.dumpProjectState("after removing test folders ",project)); //$NON-NLS-1$
+			//DebugUtilities.debug(DebugUtilities.dumpProjectState("after removing test folders ",project)); //$NON-NLS-1$
     }
 
     setNonDependencyAttributeToContainer(project, monitor);
