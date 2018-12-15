@@ -34,7 +34,7 @@
     <tycho.test.jvmArgs>-Xmx512m</tycho.test.jvmArgs>
     <eclipse.target>oxygen</eclipse.target>
     <eclipse-repo.url>http://download.eclipse.org/releases/${eclipse.target}</eclipse-repo.url>
-    <webtools-repo.url>http://download.eclipse.org/webtools/downloads/drops/R3.9.0/S-3.9.0M7-20170516000202/repository</webtools-repo.url>
+    <webtools-repo.url>http://download.eclipse.org/webtools/downloads/drops/R3.9.0/R-3.9.0-20170613094504/repository</webtools-repo.url>
     <orbit-repo.url>http://download.eclipse.org/tools/orbit/downloads/drops/R20140525021250/repository/</orbit-repo.url>
     <m2e-repo.url>http://download.eclipse.org/technology/m2e/releases/1.8/</m2e-repo.url>
     <!-- Warning : changing the mavenarchiver version requires submitting a new CQ in ipzilla -->
